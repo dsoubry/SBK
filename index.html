@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💃 SBK Betaalapp</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#7B1FA2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SBK Betaal">
+    <meta name="description" content="SBK Party & Lessenreeks betaalapp met SEPA QR">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💃</text></svg>">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a0030 0%, #4a0080 50%, #1a0030 100%);
+            min-height: 100vh;
+            padding: 10px;
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .container {
+            max-width: 420px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .app-header {
+            background: linear-gradient(135deg, #6A0DAD, #9C27B0, #E91E8C);
+            color: white;
+            padding: 16px 20px 12px;
+            text-align: center;
+        }
+
+        .app-header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .app-header .subtitle {
+            font-size: 12px;
+            opacity: 0.85;
+            margin-top: 2px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        /* Tab Bar */
+        .tab-bar {
+            display: flex;
+            background: #f3e5f5;
+            border-bottom: 2px solid #e1bee7;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 13px 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            color: #7B1FA2;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+
+        .tab.active {
+            background: white;
+            color: #6A0DAD;
+            border-bottom-color: #6A0DAD;
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            padding: 20px;
+            text-align: center;
+            min-height: 300px;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* QR Area */
+        .qr-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .qr-image {
+            width: 170px;
+            height: 170px;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 6px;
+            background: white;
+            display: none;
+        }
+
+        .qr-placeholder {
+            width: 170px;
+            height: 170px;
+            border: 3px dashed #d1c4e9;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #9e9e9e;
+            font-size: 12px;
+            text-align: center;
+            padding: 10px;
+            gap: 8px;
+        }
+
+        .qr-placeholder-icon {
+            font-size: 36px;
+        }
+
+        .qr-side {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .total-amount {
+            font-size: 28px;
+            font-weight: 800;
+            color: #6A0DAD;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            letter-spacing: 2px;
+        }
+
+        .count-badge {
+            background: #6A0DAD;
+            color: white;
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 13px;
+            font-weight: 700;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+        }
+
+        .beneficiary-name {
+            font-size: 12px;
+            color: #888;
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        /* Party button */
+        .party-btn-wrap {
+            margin: 20px 0;
+        }
+
+        .party-btn {
+            width: 100%;
+            padding: 22px;
+            background: linear-gradient(135deg, #E91E8C, #9C27B0);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 20px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(233,30,140,0.4);
+            transition: all 0.15s;
+            letter-spacing: 1px;
+        }
+
+        .party-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 8px rgba(233,30,140,0.3);
+        }
+
+        .party-btn .btn-price {
+            font-size: 28px;
+            display: block;
+        }
+
+        .party-btn .btn-label {
+            font-size: 13px;
+            opacity: 0.9;
+            font-weight: 600;
+            margin-top: 4px;
+            display: block;
+        }
+
+        /* Lessenreeks buttons */
+        .les-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin: 16px 0;
+        }
+
+        .les-btn {
+            width: 100%;
+            padding: 20px;
+            border: none;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            letter-spacing: 0.5px;
+        }
+
+        .les-btn:active {
+            transform: translateY(2px);
+            box-shadow: none !important;
+        }
+
+        .les-btn.salsa {
+            background: linear-gradient(135deg, #F44336, #E91E63);
+            color: white;
+            box-shadow: 0 4px 16px rgba(244,67,54,0.35);
+        }
+
+        .les-btn.bachata {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            color: white;
+            box-shadow: 0 4px 16px rgba(255,152,0,0.35);
+        }
+
+        .les-btn.kizomba {
+            background: linear-gradient(135deg, #9C27B0, #6A0DAD);
+            color: white;
+            box-shadow: 0 4px 16px rgba(106,13,173,0.35);
+        }
+
+        .les-btn .btn-dance {
+            font-size: 20px;
+            font-weight: 900;
+        }
+
+        .les-btn .btn-dance-icon {
+            font-size: 22px;
+        }
+
+        .les-btn .btn-dance-price {
+            font-size: 22px;
+            font-weight: 900;
+            opacity: 0.95;
+        }
+
+        /* Reset button */
+        .reset-btn {
+            width: 100%;
+            padding: 14px;
+            background: #ef5350;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 6px;
+            box-shadow: 0 3px 10px rgba(239,83,80,0.3);
+            transition: all 0.15s;
+        }
+
+        .reset-btn:active {
+            transform: translateY(1px);
+            box-shadow: none;
+        }
+
+        /* Config screen */
+        .config-screen {
+            text-align: left;
+        }
+
+        .config-section {
+            background: #fafafa;
+            border: 1px solid #e8e8e8;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .config-section h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .config-row {
+            margin-bottom: 12px;
+        }
+
+        .config-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .config-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.2s;
+            background: white;
+        }
+
+        .config-input:focus {
+            border-color: #7B1FA2;
+            outline: none;
+        }
+
+        .config-input.iban {
+            font-family: monospace;
+            font-size: 13px;
+            color: #6A0DAD;
+        }
+
+        .config-input.price {
+            font-weight: 700;
+            color: #333;
+        }
+
+        .person-block {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .person-number {
+            font-size: 11px;
+            font-weight: 700;
+            color: #9e9e9e;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ffebee;
+            border: none;
+            color: #f44336;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .add-account-btn {
+            width: 100%;
+            padding: 11px;
+            background: #e8f5e9;
+            border: 2px dashed #4CAF50;
+            border-radius: 8px;
+            color: #2e7d32;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .active-select-wrap {
+            background: #f3e5f5;
+            border: 2px solid #7B1FA2;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 14px;
+        }
+
+        .active-select-wrap label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #6A0DAD;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .active-select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #7B1FA2;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            background: white;
+            color: #6A0DAD;
+        }
+
+        .price-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .price-label-icon {
+            font-size: 20px;
+        }
+
+        .price-label-text {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .price-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .euro-sign {
+            font-size: 16px;
+            font-weight: 700;
+            color: #666;
+        }
+
+        .price-field {
+            width: 80px;
+            padding: 9px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 800;
+            color: #6A0DAD;
+            text-align: right;
+        }
+
+        .price-field:focus {
+            border-color: #7B1FA2;
+            outline: none;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #6A0DAD, #9C27B0);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(106,13,173,0.35);
+            transition: all 0.15s;
+            margin-bottom: 10px;
+        }
+
+        .save-btn:active {
+            transform: translateY(2px);
+        }
+
+        .status-msg {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .status-msg.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+            display: block;
+        }
+
+        .status-msg.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+            display: block;
+        }
+
+        .privacy-note {
+            background: #e3f2fd;
+            border-left: 4px solid #1976D2;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #1565C0;
+            margin-bottom: 14px;
+        }
+
+        /* Setup warning */
+        .setup-warning {
+            background: #fff8e1;
+            border: 2px dashed #FFC107;
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            font-size: 13px;
+            color: #795548;
+            margin-bottom: 12px;
+        }
+
+        .no-config-msg {
+            text-align: center;
+            color: #f44336;
+            background: #ffebee;
+            border: 2px dashed #f44336;
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <div class="app-header">
+        <h1>💃 SBK Betaalapp 🕺</h1>
+        <div class="subtitle">Salsa &bull; Bachata &bull; Kizomba</div>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+        <button class="tab active" id="tab-party" onclick="showTab('party')">🎉 Party</button>
+        <button class="tab" id="tab-lessen" onclick="showTab('lessen')">📚 Lessenreeks</button>
+        <button class="tab" id="tab-config" onclick="showTab('config')">⚙️ Config</button>
+    </div>
+
+    <!-- PARTY SCREEN -->
+    <div class="screen active" id="screen-party">
+        <div id="party-no-config" class="no-config-msg" style="display:none;">
+            🚨 <strong>Geen configuratie!</strong><br>
+            Ga naar ⚙️ Config om een rekening en bedragen in te stellen.
+        </div>
+
+        <div id="party-content">
+            <!-- QR -->
+            <div class="qr-area">
+                <div class="qr-side">
+                    <div class="total-amount" id="party-total">€0</div>
+                </div>
+                <div style="position:relative;">
+                    <img class="qr-image" id="party-qr" src="" alt="SEPA QR">
+                    <div class="qr-placeholder" id="party-placeholder">
+                        <div class="qr-placeholder-icon">🎉</div>
+                        <div>Klik hieronder om betaling toe te voegen</div>
+                    </div>
+                </div>
+                <div class="qr-side">
+                    <div class="count-badge" id="party-count">0×</div>
+                </div>
+            </div>
+            <div class="beneficiary-name" id="party-beneficiary"></div>
+
+            <!-- Button -->
+            <div class="party-btn-wrap">
+                <button class="party-btn" onclick="addPartyEntry()">
+                    <span class="btn-price" id="party-price-label">€0</span>
+                    <span class="btn-label">Party Ingang — klik om toe te voegen</span>
+                </button>
+            </div>
+
+            <button class="reset-btn" onclick="resetScreen('party')">🔄 Reset</button>
+        </div>
+    </div>
+
+    <!-- LESSENREEKS SCREEN -->
+    <div class="screen" id="screen-lessen">
+        <div id="lessen-no-config" class="no-config-msg" style="display:none;">
+            🚨 <strong>Geen configuratie!</strong><br>
+            Ga naar ⚙️ Config om een rekening en bedragen in te stellen.
+        </div>
+
+        <div id="lessen-content">
+            <!-- QR -->
+            <div class="qr-area">
+                <div class="qr-side">
+                    <div class="total-amount" id="lessen-total">€0</div>
+                </div>
+                <div>
+                    <img class="qr-image" id="lessen-qr" src="" alt="SEPA QR">
+                    <div class="qr-placeholder" id="lessen-placeholder">
+                        <div class="qr-placeholder-icon">📚</div>
+                        <div>Selecteer een dans om betaling toe te voegen</div>
+                    </div>
+                </div>
+                <div class="qr-side">
+                    <div class="count-badge" id="lessen-count">0×</div>
+                </div>
+            </div>
+            <div class="beneficiary-name" id="lessen-beneficiary"></div>
+
+            <!-- Buttons -->
+            <div class="les-grid">
+                <button class="les-btn salsa" onclick="addLesEntry('salsa')">
+                    <div>
+                        <div class="btn-dance">💃 Salsa</div>
+                    </div>
+                    <div class="btn-dance-price" id="salsa-price-label">€0</div>
+                </button>
+                <button class="les-btn bachata" onclick="addLesEntry('bachata')">
+                    <div>
+                        <div class="btn-dance">🌹 Bachata</div>
+                    </div>
+                    <div class="btn-dance-price" id="bachata-price-label">€0</div>
+                </button>
+                <button class="les-btn kizomba" onclick="addLesEntry('kizomba')">
+                    <div>
+                        <div class="btn-dance">🎵 Kizomba</div>
+                    </div>
+                    <div class="btn-dance-price" id="kizomba-price-label">€0</div>
+                </button>
+            </div>
+
+            <button class="reset-btn" onclick="resetScreen('lessen')">🔄 Reset</button>
+        </div>
+    </div>
+
+    <!-- CONFIG SCREEN -->
+    <div class="screen config-screen" id="screen-config">
+
+        <div class="privacy-note">
+            🔒 <strong>Privacy:</strong> Alle gegevens worden lokaal opgeslagen op je toestel. Niets wordt online bewaard.
+        </div>
+
+        <!-- Accounts -->
+        <div class="config-section">
+            <h3>👥 Rekeningen</h3>
+            <div id="persons-list">
+                <!-- injected by JS -->
+            </div>
+            <button class="add-account-btn" onclick="addPersonRow()">➕ Rekening toevoegen</button>
+
+            <div class="active-select-wrap">
+                <label>🎯 Actieve rekening voor betalingen:</label>
+                <select class="active-select" id="active-account-select">
+                    <option value="">-- Selecteer --</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Prijzen -->
+        <div class="config-section">
+            <h3>💶 Prijzen</h3>
+
+            <div class="price-row">
+                <span class="price-label-icon">🎉</span>
+                <span class="price-label-text">Party Ingang</span>
+                <div class="price-input-wrap">
+                    <span class="euro-sign">€</span>
+                    <input type="number" class="price-field" id="price-party" min="0" step="0.5" value="10">
+                </div>
+            </div>
+
+            <div style="border-top: 1px dashed #eee; margin: 10px 0;"></div>
+
+            <div class="price-row">
+                <span class="price-label-icon">💃</span>
+                <span class="price-label-text">Salsa Lessenreeks</span>
+                <div class="price-input-wrap">
+                    <span class="euro-sign">€</span>
+                    <input type="number" class="price-field" id="price-salsa" min="0" step="0.5" value="60">
+                </div>
+            </div>
+
+            <div class="price-row">
+                <span class="price-label-icon">🌹</span>
+                <span class="price-label-text">Bachata Lessenreeks</span>
+                <div class="price-input-wrap">
+                    <span class="euro-sign">€</span>
+                    <input type="number" class="price-field" id="price-bachata" min="0" step="0.5" value="60">
+                </div>
+            </div>
+
+            <div class="price-row">
+                <span class="price-label-icon">🎵</span>
+                <span class="price-label-text">Kizomba Lessenreeks</span>
+                <div class="price-input-wrap">
+                    <span class="euro-sign">€</span>
+                    <input type="number" class="price-field" id="price-kizomba" min="0" step="0.5" value="60">
+                </div>
+            </div>
+        </div>
+
+        <button class="save-btn" onclick="saveConfig()">💾 Configuratie opslaan</button>
+        <div class="status-msg" id="config-status"></div>
+    </div>
+</div>
+
+<script>
+    // ─── State ───────────────────────────────────────────────────────────────
+    let persons = [];
+    let activeAccountIndex = 0;
+    let prices = { party: 10, salsa: 60, bachata: 60, kizomba: 60 };
+
+    // Totals per screen (cumulative)
+    const totals = { party: 0, lessen: 0 };
+    const counts = { party: 0, lessen: 0 };
+
+    // ─── SEPA helpers ────────────────────────────────────────────────────────
+    function makeSEPAPayload(name, iban, amount) {
+        return `BCD\n002\n1\nSCT\n\n${name.substring(0,70)}\n${iban}\nEUR${amount.toFixed(2)}\n\n\n`;
+    }
+
+    function generateQR(imgId, amount) {
+        if (!isConfigured()) return;
+        const p = persons[activeAccountIndex];
+        if (amount <= 0) {
+            document.getElementById(imgId).style.display = 'none';
+            return;
+        }
+        const payload = makeSEPAPayload(p.name, p.iban, amount);
+        const img = document.getElementById(imgId);
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(payload)}`;
+        img.style.display = 'block';
+    }
+
+    // ─── Config check ────────────────────────────────────────────────────────
+    function isConfigured() {
+        return persons.length > 0 && activeAccountIndex < persons.length;
+    }
+
+    function updateScreenVisibility() {
+        const ok = isConfigured();
+
+        // Party
+        document.getElementById('party-no-config').style.display = ok ? 'none' : 'block';
+        document.getElementById('party-content').style.display = ok ? 'block' : 'none';
+
+        // Lessen
+        document.getElementById('lessen-no-config').style.display = ok ? 'none' : 'block';
+        document.getElementById('lessen-content').style.display = ok ? 'block' : 'none';
+
+        if (ok) {
+            const p = persons[activeAccountIndex];
+            document.getElementById('party-beneficiary').textContent = p.name;
+            document.getElementById('lessen-beneficiary').textContent = p.name;
+            updatePriceLabels();
+        }
+    }
+
+    function updatePriceLabels() {
+        document.getElementById('party-price-label').textContent = `€${prices.party.toFixed(2)}`;
+        document.getElementById('salsa-price-label').textContent = `€${prices.salsa.toFixed(2)}`;
+        document.getElementById('bachata-price-label').textContent = `€${prices.bachata.toFixed(2)}`;
+        document.getElementById('kizomba-price-label').textContent = `€${prices.kizomba.toFixed(2)}`;
+    }
+
+    // ─── Tab switching ────────────────────────────────────────────────────────
+    function showTab(name) {
+        ['party','lessen','config'].forEach(t => {
+            document.getElementById(`tab-${t}`).classList.toggle('active', t === name);
+            document.getElementById(`screen-${t}`).classList.toggle('active', t === name);
+        });
+        if (name === 'config') renderConfigUI();
+        updateScreenVisibility();
+    }
+
+    // ─── Party screen ─────────────────────────────────────────────────────────
+    function addPartyEntry() {
+        if (!isConfigured()) return;
+        totals.party = Math.round((totals.party + prices.party) * 100) / 100;
+        counts.party++;
+        updateQRArea('party');
+    }
+
+    // ─── Lessen screen ────────────────────────────────────────────────────────
+    function addLesEntry(dance) {
+        if (!isConfigured()) return;
+        const price = prices[dance];
+        totals.lessen = Math.round((totals.lessen + price) * 100) / 100;
+        counts.lessen++;
+        updateQRArea('lessen');
+    }
+
+    // ─── Update QR area ───────────────────────────────────────────────────────
+    function updateQRArea(screen) {
+        const total = totals[screen];
+        const count = counts[screen];
+
+        document.getElementById(`${screen}-total`).textContent = `€${total.toFixed(2)}`;
+        document.getElementById(`${screen}-count`).textContent = `${count}×`;
+
+        const phId = screen === 'party' ? 'party-placeholder' : 'lessen-placeholder';
+        document.getElementById(phId).style.display = total > 0 ? 'none' : 'flex';
+
+        const qrId = screen === 'party' ? 'party-qr' : 'lessen-qr';
+        generateQR(qrId, total);
+    }
+
+    // ─── Reset ────────────────────────────────────────────────────────────────
+    function resetScreen(screen) {
+        totals[screen] = 0;
+        counts[screen] = 0;
+        const qrId = screen === 'party' ? 'party-qr' : 'lessen-qr';
+        document.getElementById(qrId).style.display = 'none';
+        updateQRArea(screen);
+    }
+
+    // ─── Config: render UI ────────────────────────────────────────────────────
+    function renderConfigUI() {
+        const list = document.getElementById('persons-list');
+        list.innerHTML = '';
+
+        persons.forEach((p, i) => {
+            const div = document.createElement('div');
+            div.className = 'person-block';
+            div.innerHTML = `
+                <div class="person-number">Rekening ${i + 1}</div>
+                <button class="remove-btn" onclick="removePerson(${i})" title="Verwijder">×</button>
+                <div class="config-row">
+                    <label class="config-label">Naam begunstigde</label>
+                    <input class="config-input" type="text" id="p-name-${i}" value="${escHtml(p.name)}" placeholder="Naam">
+                </div>
+                <div class="config-row">
+                    <label class="config-label">IBAN rekeningnummer</label>
+                    <input class="config-input iban" type="text" id="p-iban-${i}" value="${escHtml(p.iban)}" placeholder="BE00 0000 0000 0000">
+                </div>
+            `;
+            list.appendChild(div);
+        });
+
+        // Active account select
+        const sel = document.getElementById('active-account-select');
+        sel.innerHTML = '<option value="">-- Selecteer actieve rekening --</option>';
+        persons.forEach((p, i) => {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = p.name || `Rekening ${i + 1}`;
+            if (i === activeAccountIndex) opt.selected = true;
+            sel.appendChild(opt);
+        });
+
+        // Prices
+        document.getElementById('price-party').value = prices.party;
+        document.getElementById('price-salsa').value = prices.salsa;
+        document.getElementById('price-bachata').value = prices.bachata;
+        document.getElementById('price-kizomba').value = prices.kizomba;
+    }
+
+    function addPersonRow() {
+        persons.push({ name: '', iban: '' });
+        renderConfigUI();
+    }
+
+    function removePerson(i) {
+        persons.splice(i, 1);
+        if (activeAccountIndex >= persons.length) activeAccountIndex = Math.max(0, persons.length - 1);
+        renderConfigUI();
+    }
+
+    function escHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ─── Save Config ──────────────────────────────────────────────────────────
+    function saveConfig() {
+        try {
+            // Collect persons
+            const newPersons = [];
+            persons.forEach((_, i) => {
+                const name = document.getElementById(`p-name-${i}`)?.value.trim() || '';
+                const iban = document.getElementById(`p-iban-${i}`)?.value.trim().replace(/\s/g,'') || '';
+                if (name && iban) newPersons.push({ name, iban });
+            });
+
+            if (newPersons.length === 0) throw new Error('Voeg minstens één rekening toe!');
+
+            const selIdx = parseInt(document.getElementById('active-account-select').value);
+            if (isNaN(selIdx) || selIdx >= newPersons.length) throw new Error('Selecteer een actieve rekening!');
+
+            const newPrices = {
+                party:   parseFloat(document.getElementById('price-party').value)   || 0,
+                salsa:   parseFloat(document.getElementById('price-salsa').value)   || 0,
+                bachata: parseFloat(document.getElementById('price-bachata').value) || 0,
+                kizomba: parseFloat(document.getElementById('price-kizomba').value) || 0,
+            };
+
+            persons = newPersons;
+            activeAccountIndex = selIdx;
+            prices = newPrices;
+
+            localStorage.setItem('sbk-persons', JSON.stringify(persons));
+            localStorage.setItem('sbk-active', activeAccountIndex.toString());
+            localStorage.setItem('sbk-prices', JSON.stringify(prices));
+
+            updatePriceLabels();
+            updateScreenVisibility();
+
+            showStatus('✅ Configuratie opgeslagen!', 'success');
+        } catch(e) {
+            showStatus('❌ ' + e.message, 'error');
+        }
+    }
+
+    function showStatus(msg, type) {
+        const el = document.getElementById('config-status');
+        el.textContent = msg;
+        el.className = `status-msg ${type}`;
+        setTimeout(() => { el.className = 'status-msg'; }, 4000);
+    }
+
+    // ─── Load from localStorage ───────────────────────────────────────────────
+    function loadConfig() {
+        try {
+            const savedPersons = localStorage.getItem('sbk-persons');
+            persons = savedPersons ? JSON.parse(savedPersons) : [];
+
+            const savedActive = localStorage.getItem('sbk-active');
+            activeAccountIndex = savedActive !== null ? parseInt(savedActive) : 0;
+            if (activeAccountIndex >= persons.length) activeAccountIndex = 0;
+
+            const savedPrices = localStorage.getItem('sbk-prices');
+            if (savedPrices) prices = { ...prices, ...JSON.parse(savedPrices) };
+        } catch(e) {
+            persons = [];
+        }
+    }
+
+    // ─── Init ─────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        loadConfig();
+        updateScreenVisibility();
+        updatePriceLabels();
+    });
+</script>
+</body>
+</html>
